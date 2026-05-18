@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>P2P Operasyon Paneli</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">₮</span>
+        <div>
+          <strong>P2P Panel</strong>
+          <small>TL → USDT → P2P satış</small>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <a href="#ozet" class="active">Özet</a>
+        <a href="#alislar">TR alımları</a>
+        <a href="#satislar">P2P satışları</a>
+        <a href="#ortaklar">Ortaklar</a>
+        <a href="#arsiv">Arşiv</a>
+      </nav>
+
+      <div class="side-panel">
+        <span class="status-dot"></span>
+        <div>
+          <strong id="readyCount">0 işlem hazır</strong>
+          <small>48 saat blokajı dolan alımlar</small>
+        </div>
+      </div>
+    </aside>
+
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Operasyon kontrol</p>
+          <h1>P2P ticaret paneli</h1>
+        </div>
+      <div class="toolbar">
+          <span class="sync-badge" id="syncStatus">Yerel mod</span>
+          <button class="ghost-button" id="logoutBtn" hidden>Çıkış</button>
+          <button class="icon-button" id="exportBtn" title="Verileri dışa aktar" aria-label="Verileri dışa aktar">⇩</button>
+          <label class="icon-button file-button" title="Verileri içe aktar" aria-label="Verileri içe aktar">
+            ⇧
+            <input id="importInput" type="file" accept="application/json" />
+          </label>
+          <button class="danger-button" id="resetBtn">Sıfırla</button>
+        </div>
+      </header>
+
+      <section class="auth-panel" id="authPanel" hidden>
+        <form class="panel auth-card" id="loginForm">
+          <div class="panel-header">
+            <div>
+              <h2>Supabase girişi</h2>
+              <p>Aynı hesabı kullanan ortaklar aynı kayıtları görür.</p>
+            </div>
+          </div>
+          <label>
+            E-posta
+            <input name="email" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            Şifre
+            <input name="password" type="password" autocomplete="current-password" required />
+          </label>
+          <div class="auth-actions">
+            <button type="submit">Giriş yap</button>
+            <button type="button" id="signupBtn">Hesap oluştur</button>
+          </div>
+          <small id="authMessage"></small>
+        </form>
+      </section>
+
+      <section id="ozet" class="section">
+        <div class="summary-grid">
+          <article class="metric">
+            <span>Toplam TL maliyet</span>
+            <strong id="totalTry">₺0</strong>
+            <small id="avgBuyRate">Ortalama alış: ₺0</small>
+          </article>
+          <article class="metric">
+            <span>Blokajdaki USDT</span>
+            <strong id="lockedUsdt">0 USDT</strong>
+            <small id="nextUnlock">Sıradaki çözülme yok</small>
+          </article>
+          <article class="metric">
+            <span>Satılabilir USDT</span>
+            <strong id="readyUsdt">0 USDT</strong>
+            <small id="transferredUsdt">Binance'a aktarılan: 0</small>
+          </article>
+          <article class="metric accent">
+            <span>Net kâr</span>
+            <strong id="netProfit">₺0</strong>
+            <small id="profitPerPartner">Ortak başı: ₺0</small>
+          </article>
+        </div>
+
+        <div class="board">
+          <section class="panel wide">
+            <div class="panel-header">
+              <div>
+                <h2>Akış</h2>
+                <p>TR platform alımı, blokaj ve satış ilerlemesi</p>
+              </div>
+            </div>
+            <div class="flow">
+              <div class="flow-step">
+                <span id="flowBought">0</span>
+                <strong>USDT alındı</strong>
+              </div>
+              <div class="flow-line"></div>
+              <div class="flow-step locked">
+                <span id="flowLocked">0</span>
+                <strong>48s blokaj</strong>
+              </div>
+              <div class="flow-line"></div>
+              <div class="flow-step ready">
+                <span id="flowReady">0</span>
+                <strong>Transfer hazır</strong>
+              </div>
+              <div class="flow-line"></div>
+              <div class="flow-step sold">
+                <span id="flowSold">0</span>
+                <strong>P2P satıldı</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <h2>Ortak payı</h2>
+                <p>Sermaye, satış ve kâr görünümü</p>
+              </div>
+            </div>
+            <div id="partnerCards" class="partner-cards"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="alislar" class="section two-column">
+        <form class="panel form-panel" id="purchaseForm">
+          <div class="panel-header">
+            <div>
+              <h2>TR kripto alımı</h2>
+              <p>TL gönderimi ve 48 saatlik USDT blokajı</p>
+            </div>
+          </div>
+
+          <label>
+            Ortak
+            <select name="partner" required>
+              <option>Ortak 1</option>
+              <option>Ortak 2</option>
+            </select>
+          </label>
+          <label>
+            Platform
+            <input name="platform" placeholder="Paribu, BTCTurk,..." required />
+          </label>
+          <div class="input-row">
+            <label>
+              TL tutarı
+              <input name="tryAmount" type="number" min="0" step="0.01" required />
+            </label>
+            <label>
+              Alınan USDT
+              <input name="usdtAmount" type="number" min="0" step="0.000001" required />
+            </label>
+          </div>
+          <label>
+            İşlem zamanı
+            <input name="createdAt" type="datetime-local" required />
+          </label>
+          <label>
+            Not
+            <input name="note" placeholder="Dekont, banka, açıklama..." />
+          </label>
+          <button type="submit">Alımı kaydet</button>
+        </form>
+
+        <section class="panel table-panel">
+          <div class="panel-header">
+            <div>
+              <h2>Alım kayıtları</h2>
+              <p>Blokaj durumları otomatik hesaplanır</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ortak</th>
+                  <th>Platform</th>
+                  <th>TL</th>
+                  <th>USDT</th>
+                  <th>Kur</th>
+                  <th>Durum</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="purchaseRows"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section id="satislar" class="section two-column">
+        <form class="panel form-panel" id="saleForm">
+          <div class="panel-header">
+            <div>
+              <h2>Binance P2P satışı</h2>
+              <p>USDT çıkışı ve TL tahsilat kaydı</p>
+            </div>
+          </div>
+
+          <div class="input-row">
+            <label>
+              Satılan USDT
+              <input name="usdtAmount" type="number" min="0" step="0.000001" required />
+            </label>
+            <label>
+              Gelen TL
+              <input name="tryReceived" type="number" min="0" step="0.01" required />
+            </label>
+          </div>
+          <div class="input-row">
+            <label>
+              Masraf
+              <input name="fee" type="number" min="0" step="0.01" value="0" />
+            </label>
+            <label>
+              Satış zamanı
+              <input name="soldAt" type="datetime-local" required />
+            </label>
+          </div>
+          <label>
+            Alıcı / referans
+            <input name="buyer" placeholder="P2P kullanıcı adı veya sipariş no" />
+          </label>
+          <button type="submit">Satışı kaydet</button>
+        </form>
+
+        <section class="panel table-panel">
+          <div class="panel-header">
+            <div>
+              <h2>Satış kayıtları</h2>
+              <p>Net gelir ve satış kuru</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tarih</th>
+                  <th>USDT</th>
+                  <th>Gelen TL</th>
+                  <th>Masraf</th>
+                  <th>Net kur</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="saleRows"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section id="ortaklar" class="section">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Ortak ayarları</h2>
+              <p>İsimleri ve kâr paylaşım oranını düzenle</p>
+            </div>
+          </div>
+          <form id="partnerForm" class="partner-form">
+            <label>
+              Ortak 1 adı
+              <input name="p1Name" required />
+            </label>
+            <label>
+              Ortak 1 payı %
+              <input name="p1Share" type="number" min="0" max="100" step="1" required />
+            </label>
+            <label>
+              Ortak 2 adı
+              <input name="p2Name" required />
+            </label>
+            <label>
+              Ortak 2 payı %
+              <input name="p2Share" type="number" min="0" max="100" step="1" required />
+            </label>
+            <button type="submit">Ortakları güncelle</button>
+          </form>
+        </section>
+      </section>
+
+      <section id="arsiv" class="section">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>İşlem özeti</h2>
+              <p>Güncel stok, maliyet ve tahsilat tablosu</p>
+            </div>
+          </div>
+          <div class="ledger" id="ledger"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
