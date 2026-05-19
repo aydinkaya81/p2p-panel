@@ -614,7 +614,14 @@ async function signIn(email, password) {
 
 async function signUp(email, password) {
   try {
-    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+    const redirectTo = `${window.location.origin}${window.location.pathname}`;
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectTo,
+      },
+    });
     if (error) throw error;
     currentUser = data.user;
     $("#authMessage").textContent = "Hesap oluşturuldu. E-posta onayı açıksa gelen kutunu kontrol et.";
