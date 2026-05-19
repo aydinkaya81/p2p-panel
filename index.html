@@ -166,7 +166,7 @@
           <div class="input-row">
             <label>
               TL tutarı
-              <input name="tryAmount" type="number" min="0" step="0.01" required />
+              <input name="tryAmount" class="money-input" type="text" inputmode="decimal" required />
             </label>
             <label>
               Alınan USDT
@@ -226,17 +226,27 @@
             </label>
             <label>
               Gelen TL
-              <input name="tryReceived" type="number" min="0" step="0.01" required />
+              <input name="tryReceived" class="money-input sale-calc" type="text" inputmode="decimal" required />
             </label>
           </div>
           <div class="input-row">
             <label>
-              Masraf
-              <input name="fee" type="number" min="0" step="0.01" value="0" />
+              Satış USDT kuru
+              <input name="saleRate" class="sale-calc" type="number" min="0" step="0.0001" required />
             </label>
+            <label>
+              Otomatik masraf
+              <input name="fee" class="money-input" type="text" value="0" readonly />
+            </label>
+          </div>
+          <div class="input-row">
             <label>
               Satış zamanı
               <input name="soldAt" type="datetime-local" required />
+            </label>
+            <label>
+              Beklenen brüt TL
+              <input name="expectedTry" class="money-input" type="text" value="0" readonly />
             </label>
           </div>
           <label>
@@ -261,6 +271,7 @@
                   <th>USDT</th>
                   <th>Gelen TL</th>
                   <th>Masraf</th>
+                  <th>Satış kuru</th>
                   <th>Net kur</th>
                   <th></th>
                 </tr>

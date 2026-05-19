@@ -18,6 +18,7 @@ const $ = (selector) => document.querySelector(selector);
 const fmtTry = new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 2 });
 const fmtNum = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 6 });
 const fmtRate = new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 4 });
+const fmtMoneyInput = new Intl.NumberFormat("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
 function hasSupabaseConfig() {
   const config = window.P2P_SUPABASE;
@@ -61,6 +62,35 @@ function resetForm(selector) {
   if (form) form.reset();
 }
 
+function parseMoney(value) {
+  const normalized = String(value || "")
+    .replace(/[^\d,.-]/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+  return Number(normalized) || 0;
+}
+
+function formatMoneyValue(value) {
+  return fmtMoneyInput.format(Number(value) || 0);
+}
+
+function formatMoneyInput(input) {
+  if (!input || input.value === "") return;
+  input.value = formatMoneyValue(parseMoney(input.value));
+}
+
+function updateSaleCalculations() {
+  const form = $("#saleForm");
+  if (!form) return;
+  const usdt = Number(form.elements.usdtAmount.value || 0);
+  const received = parseMoney(form.elements.tryReceived.value);
+  const saleRate = Number(String(form.elements.saleRate.value || "0").replace(",", ".")) || 0;
+  const expected = usdt * saleRate;
+  const fee = Math.max(0, expected - received);
+  form.elements.expectedTry.value = formatMoneyValue(expected);
+  form.elements.fee.value = formatMoneyValue(fee);
+}
+
 function toLocalInputValue(date) {
   const offset = date.getTimezoneOffset();
   const local = new Date(date.getTime() - offset * 60000);
@@ -96,9 +126,9 @@ function totals() {
     .filter((item) => item.transferred)
     .reduce((sum, item) => sum + Number(item.usdtAmount), 0);
   const soldUsdt = state.sales.reduce((sum, item) => sum + Number(item.usdtAmount), 0);
-  const grossRevenue = state.sales.reduce((sum, item) => sum + Number(item.tryReceived), 0);
+  const netRevenue = state.sales.reduce((sum, item) => sum + Number(item.tryReceived), 0);
   const fees = state.sales.reduce((sum, item) => sum + Number(item.fee || 0), 0);
-  const netRevenue = grossRevenue - fees;
+  const grossRevenue = netRevenue + fees;
   const costOfSold = totalUsdt > 0 ? (totalTry / totalUsdt) * soldUsdt : 0;
   const netProfit = netRevenue - costOfSold;
   const availableInventory = Math.max(0, transferredUsdt - soldUsdt);
@@ -235,15 +265,19 @@ function renderSales() {
     .slice()
     .sort((a, b) => new Date(b.soldAt) - new Date(a.soldAt))
     .map((item) => {
-      const net = Number(item.tryReceived) - Number(item.fee || 0);
-      const rate = net / Number(item.usdtAmount || 1);
+      const received = Number(item.tryReceived);
+      const fee = Number(item.fee || 0);
+      const gross = received + fee;
+      const saleRate = gross / Number(item.usdtAmount || 1);
+      const netRate = received / Number(item.usdtAmount || 1);
       return `
         <tr>
           <td>${new Date(item.soldAt).toLocaleString("tr-TR")}</td>
           <td>${fmtNum.format(Number(item.usdtAmount))}</td>
-          <td>${fmtTry.format(Number(item.tryReceived))}</td>
-          <td>${fmtTry.format(Number(item.fee || 0))}</td>
-          <td>${fmtRate.format(rate)}</td>
+          <td>${fmtTry.format(received)}</td>
+          <td>${fmtTry.format(fee)}</td>
+          <td>${fmtRate.format(saleRate)}</td>
+          <td>${fmtRate.format(netRate)}</td>
           <td><button class="small-action" title="Sil" data-delete-sale="${item.id}">×</button></td>
         </tr>
       `;
@@ -440,7 +474,7 @@ $("#purchaseForm").addEventListener("submit", async (event) => {
       id: uid("buy"),
       partnerId: form.get("partner"),
       platform: form.get("platform"),
-      tryAmount: Number(form.get("tryAmount")),
+      tryAmount: parseMoney(form.get("tryAmount")),
       usdtAmount: Number(form.get("usdtAmount")),
       createdAt: new Date(form.get("createdAt")).toISOString(),
       note: form.get("note"),
@@ -461,11 +495,15 @@ $("#saleForm").addEventListener("submit", async (event) => {
   try {
     await requireCloudReady();
     const form = new FormData($("#saleForm"));
+    const usdtAmount = Number(form.get("usdtAmount"));
+    const tryReceived = parseMoney(form.get("tryReceived"));
+    const saleRate = Number(String(form.get("saleRate") || "0").replace(",", ".")) || 0;
+    const expected = usdtAmount * saleRate;
     const item = {
       id: uid("sale"),
-      usdtAmount: Number(form.get("usdtAmount")),
-      tryReceived: Number(form.get("tryReceived")),
-      fee: Number(form.get("fee") || 0),
+      usdtAmount,
+      tryReceived,
+      fee: Math.max(0, expected - tryReceived),
       soldAt: new Date(form.get("soldAt")).toISOString(),
       buyer: form.get("buyer"),
     };
@@ -608,6 +646,17 @@ $("#logoutBtn").addEventListener("click", async () => {
   currentUser = null;
   state = structuredClone(defaultState);
   render();
+});
+
+document.querySelectorAll(".money-input").forEach((input) => {
+  input.addEventListener("blur", () => {
+    formatMoneyInput(input);
+    updateSaleCalculations();
+  });
+});
+
+document.querySelectorAll(".sale-calc").forEach((input) => {
+  input.addEventListener("input", updateSaleCalculations);
 });
 
 document.querySelectorAll(".nav a").forEach((link) => {
