@@ -415,9 +415,10 @@ async function requireCloudReady() {
 
 $("#purchaseForm").addEventListener("submit", async (event) => {
   event.preventDefault();
+  const formElement = event.currentTarget;
   try {
     await requireCloudReady();
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     const item = {
       id: uid("buy"),
       partnerId: form.get("partner"),
@@ -430,7 +431,7 @@ $("#purchaseForm").addEventListener("submit", async (event) => {
     };
     state.purchases.push(item);
     await persistPurchase(item);
-    event.currentTarget.reset();
+    formElement.reset();
     setDefaultDates();
     render();
   } catch (error) {
@@ -440,9 +441,10 @@ $("#purchaseForm").addEventListener("submit", async (event) => {
 
 $("#saleForm").addEventListener("submit", async (event) => {
   event.preventDefault();
+  const formElement = event.currentTarget;
   try {
     await requireCloudReady();
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     const item = {
       id: uid("sale"),
       usdtAmount: Number(form.get("usdtAmount")),
@@ -453,7 +455,7 @@ $("#saleForm").addEventListener("submit", async (event) => {
     };
     state.sales.push(item);
     await persistSale(item);
-    event.currentTarget.reset();
+    formElement.reset();
     setDefaultDates();
     render();
   } catch (error) {
