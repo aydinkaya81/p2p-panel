@@ -198,7 +198,6 @@ function renderPurchases() {
     .slice()
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .map((item) => {
-      const partner = state.partners.find((p) => p.id === item.partnerId);
       const status = getPurchaseStatus(item);
       const rate = Number(item.tryAmount) / Number(item.usdtAmount || 1);
       const transferButton =
@@ -207,7 +206,7 @@ function renderPurchases() {
           : "";
       return `
         <tr>
-          <td>${escapeHtml(partner?.name || item.partner)}</td>
+          <td>${escapeHtml(purchaseSourceName(item))}</td>
           <td>${escapeHtml(item.platform)}</td>
           <td>${fmtTry.format(Number(item.tryAmount))}</td>
           <td>${fmtNum.format(Number(item.usdtAmount))}</td>
@@ -223,6 +222,12 @@ function renderPurchases() {
       `;
     })
     .join("");
+}
+
+function purchaseSourceName(item) {
+  if (item.partnerId === "cash") return "Kasa";
+  const partner = state.partners.find((p) => p.id === item.partnerId);
+  return partner?.name || item.partner || "Bilinmiyor";
 }
 
 function renderSales() {
@@ -247,9 +252,14 @@ function renderSales() {
 }
 
 function renderLedger(data) {
+  const cashPurchases = state.purchases.filter((item) => item.partnerId === "cash");
+  const cashTry = cashPurchases.reduce((sum, item) => sum + Number(item.tryAmount), 0);
+  const cashUsdt = cashPurchases.reduce((sum, item) => sum + Number(item.usdtAmount), 0);
   const items = [
     ["Toplam USDT", `${fmtNum.format(data.totalUsdt)} USDT`],
     ["Binance stok", `${fmtNum.format(data.availableInventory)} USDT`],
+    ["Kasa alımı", fmtTry.format(cashTry)],
+    ["Kasa USDT", `${fmtNum.format(cashUsdt)} USDT`],
     ["Net tahsilat", fmtTry.format(data.netRevenue)],
     ["Satış ortalaması", fmtRate.format(data.avgSellRate)],
     ["Satılan maliyeti", fmtTry.format(data.costOfSold)],
@@ -270,7 +280,10 @@ function syncPartnerForm() {
   $("#partnerForm [name='p2Share']").value = state.partners[1].share;
 
   const purchaseSelect = $("#purchaseForm [name='partner']");
-  purchaseSelect.innerHTML = state.partners.map((partner) => `<option value="${partner.id}">${escapeHtml(partner.name)}</option>`).join("");
+  purchaseSelect.innerHTML = [
+    ...state.partners.map((partner) => `<option value="${partner.id}">${escapeHtml(partner.name)}</option>`),
+    `<option value="cash">Kasa</option>`,
+  ].join("");
 }
 
 function escapeHtml(value) {
