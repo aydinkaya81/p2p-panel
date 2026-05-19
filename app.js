@@ -527,7 +527,7 @@ $("#exportBtn").addEventListener("click", () => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `p2p-panel-${new Date().toISOString().slice(0, 10)}.json`;
+  link.download = `aydkripto-${new Date().toISOString().slice(0, 10)}.json`;
   link.click();
   URL.revokeObjectURL(url);
 });
