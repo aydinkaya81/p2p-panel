@@ -56,6 +56,11 @@ function setDefaultDates() {
   $("#saleForm [name='soldAt']").value = value;
 }
 
+function resetForm(selector) {
+  const form = $(selector);
+  if (form) form.reset();
+}
+
 function toLocalInputValue(date) {
   const offset = date.getTimezoneOffset();
   const local = new Date(date.getTime() - offset * 60000);
@@ -415,10 +420,9 @@ async function requireCloudReady() {
 
 $("#purchaseForm").addEventListener("submit", async (event) => {
   event.preventDefault();
-  const formElement = event.currentTarget;
   try {
     await requireCloudReady();
-    const form = new FormData(formElement);
+    const form = new FormData($("#purchaseForm"));
     const item = {
       id: uid("buy"),
       partnerId: form.get("partner"),
@@ -431,7 +435,7 @@ $("#purchaseForm").addEventListener("submit", async (event) => {
     };
     state.purchases.push(item);
     await persistPurchase(item);
-    formElement.reset();
+    resetForm("#purchaseForm");
     setDefaultDates();
     render();
   } catch (error) {
@@ -441,10 +445,9 @@ $("#purchaseForm").addEventListener("submit", async (event) => {
 
 $("#saleForm").addEventListener("submit", async (event) => {
   event.preventDefault();
-  const formElement = event.currentTarget;
   try {
     await requireCloudReady();
-    const form = new FormData(formElement);
+    const form = new FormData($("#saleForm"));
     const item = {
       id: uid("sale"),
       usdtAmount: Number(form.get("usdtAmount")),
@@ -455,7 +458,7 @@ $("#saleForm").addEventListener("submit", async (event) => {
     };
     state.sales.push(item);
     await persistSale(item);
-    formElement.reset();
+    resetForm("#saleForm");
     setDefaultDates();
     render();
   } catch (error) {
